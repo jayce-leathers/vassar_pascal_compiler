@@ -21,6 +21,8 @@ public class Token
 		SUBTRACT, MULTIPLY, DIVIDE, INTEGERDIVIDE, MOD, AND, OR, NOT
 	}
 
+	public static final int MAX_IDENTIFIER_SIZE = 64;
+
 	private TokenType type;
 	private String value;
 	private OperatorType opType;
