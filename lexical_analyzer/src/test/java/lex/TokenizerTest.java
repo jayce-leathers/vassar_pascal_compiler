@@ -178,6 +178,7 @@ public class TokenizerTest
 	@Test
 	public void theBigTest() throws IOException, LexicalError
 	{
+		int count = 0;
 		URL url = getUrl();
 		assertNotNull("Could not load test file.", url);
 		Tokenizer tokenizer = new Tokenizer(url);
@@ -187,9 +188,13 @@ public class TokenizerTest
 			assertNotNull("Tokenizer did not return a token.", token);
 			while (token.getType() != ENDOFFILE)
 			{
+				++count;
 				String message = String.format("%d : %s", tokenizer.getLineNumber(), token.toString());
 				System.out.println(message);
 				token = tokenizer.getNextToken();
+				if (count > 100) {
+					throw new IOException("We should have encounted ENDOFFILE by now...");
+				}
 			}
 		}
 		catch (LexicalError e)
