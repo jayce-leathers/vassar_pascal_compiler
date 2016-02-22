@@ -3,10 +3,12 @@ package lex;
 import errors.LexicalError;
 import symbolTable.KeywordTable;
 import symbolTable.SymbolTable;
+import symbolTable.SymbolTableEntry;
 
 import static lex.Token.MAX_IDENTIFIER_SIZE;
 import java.io.File;
 import java.io.IOException;
+import java.io.StreamCorruptedException;
 import java.net.URL;
 import java.nio.Buffer;
 import java.nio.BufferOverflowException;
@@ -63,8 +65,7 @@ public class Tokenizer
 		Token token;
 		buffer.clear();
 		char c = stream.currentChar();
-		if (Character.isLetter
-				(c))
+		if (Character.isLetter(c))
 			token = readIdentifier(c);
 		else if (Character.isDigit(c))
 			token = readNumber(c);
@@ -87,13 +88,54 @@ public class Tokenizer
 			stream.pushBack(nextChar);
 		}
 		result = new Token();
-		result.setType(TokenType.IDENTIFIER);
-		result.setValue(buffer.toString());
+		SymbolTableEntry lookup = keywordTable.lookup(buffer.toString().toUpperCase());
+		if (lookup != null) {
+			result.setType(lookup.getType());
+			result.setValue(buffer.toString());
+			assignOpValues(result);
+		}
+		else {
+			result.setType(TokenType.IDENTIFIER);
+			result.setValue(buffer.toString());
+		}
 		return result;
+
+	}
+	private void assignOpValues(Token token) {
+		switch (token.getValue()) {
+			case "=":
+			case "+":
+			case "*":
+				token.setValue("1");
+				break;
+			case "<>":
+			case "-":
+			case "/":
+				token.setValue("2");
+				break;
+			case "<":
+			case "OR":
+			case "DIV":
+				token.setValue("3");
+				break;
+			case ">":
+			case "MOD":
+				token.setValue("4");
+				break;
+			case "<=":
+			case ">=":
+			case "AND":
+				token.setValue("5");
+				break;
+			default:
+				break;
+		}
 	}
 
 	private Token readNumber(char nextChar) throws LexicalError {
 		Token result;
+		boolean realFlag = false;
+
 		while (Character.isDigit(nextChar)) {
 			try { buffer.append(nextChar); }
 			catch (BufferOverflowException e) {
@@ -102,11 +144,55 @@ public class Tokenizer
 			nextChar = stream.currentChar();
 		}
 
+		if (nextChar == '.') {
+			char peek = stream.currentChar();
+			if (Character.isDigit(peek)) {
+				realFlag = true;
+				try {
+					buffer.append(nextChar);
+					buffer.append(peek);
+					nextChar = stream.currentChar();
+					while (Character.isDigit(nextChar)) {
+						buffer.append(nextChar);
+						nextChar = stream.currentChar();
+					}
+				}
+				catch (BufferOverflowException e) {
+					throw LexicalError.IdentifierTooLong(buffer.toString());
+				}
+				if (nextChar == 'e') {
+					peek = stream.currentChar();
+					if (Character.isDigit(peek)) {
+						buffer.append(nextChar);
+						buffer.append(peek);
+						nextChar = stream.currentChar();
+						while (Character.isDigit(nextChar)) {
+							buffer.append(nextChar);
+							nextChar = stream.currentChar();
+						}
+					}
+				}
+			} else if (peek == '.') {
+				stream.pushBack(nextChar);
+				stream.pushBack(peek);
+			}
+			else {
+				//TODO: throw malformed constant error
+			}
+		}
+
 		if (!(nextChar == CharStream.BLANK)) {
 			stream.pushBack(nextChar);
 		}
+		
 		result = new Token();
-		result.setType(TokenType.IDENTIFIER);
+		if (realFlag) {
+			result.setType(TokenType.REALCONSTANT);
+		}
+		else {
+			result.setType(TokenType.INTCONSTANT);
+		}
+
 		result.setValue(buffer.toString());
 		return result;
 	}
