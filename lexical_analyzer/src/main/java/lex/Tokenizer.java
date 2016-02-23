@@ -15,15 +15,16 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.BufferOverflowException;
+import java.nio.BufferUnderflowException;
 import java.nio.CharBuffer;
 
 /*
  * TODO: Assignment #1
  */
 public class Tokenizer {
-	private CharStream stream = null;
-	private CharBuffer buffer;
-	private Token lastToken = null;
+	private CharStream stream = null; //stream characters are read from
+	private CharBuffer buffer;//buffer to hold read characters
+	private Token lastToken = null; //keep track of the last token returned
 	/**
 	 * The KeywordTable is a SymbolTable that comes with all of the KeywordEntries
 	 * already inserted.
@@ -53,7 +54,14 @@ public class Tokenizer {
 		this.stream = stream;
 		keywordTable = new KeywordTable();
 		buffer = CharBuffer.allocate(MAX_IDENTIFIER_SIZE);
-		// TODO more initialization will be needed...
+	}
+
+	//flushes buffer and resets
+	private void flushBuffer() {
+		for(int i = 0; i < buffer.position(); i++) {
+			buffer.put(i, ' ');
+		}
+		buffer.clear();
 	}
 
 	public int getLineNumber() {
@@ -62,58 +70,61 @@ public class Tokenizer {
 
 	public Token getNextToken() throws LexicalError {
 		Token token;
-//		if (lastToken != null) {
-//			lastToken.clear();
-//		}
-		buffer = CharBuffer.allocate(MAX_IDENTIFIER_SIZE);
-		char c = stream.currentChar();
-		if (c == CharStream.BLANK){
-			c = stream.currentChar();
+		flushBuffer();//clear the buffer for the new token
+		char c = stream.currentChar();//read the first char
+		if (c == CharStream.BLANK){// if the char is BLANK just discard and try again
+			c = stream.currentChar();//all consecutive white space is skipped so we no this isn't BLANK
 		}
+		//Call the correct stream tokenizer method
 		if (Character.isLetter(c))
 			token = readIdentifier(c);
 		else if (Character.isDigit(c))
 			token = readNumber(c);
 		else
 			token = readSymbol(c);
-		lastToken = token;
+		lastToken = token;//keep track of the last token
 		return token;
 	}
-
-	private Token readIdentifier(char nextChar) throws LexicalError {
-		Token result;
-		while (Character.isDigit(nextChar) || Character.isLetter(nextChar)) {
-			try { buffer.put(nextChar); }
-			catch (BufferOverflowException e) {
-				throw LexicalError.IdentifierTooLong(buffer.toString());
-			}
-			nextChar = stream.currentChar();
-		}
-
-		if (!(nextChar == CharStream.BLANK)) {
-			stream.pushBack(nextChar);
-		}
-		result = new Token();
+	//returns a properly formatted string from the buffer contents
+	private String getBufferValue() {
 		char[] dst = new char[buffer.position() + 1];
 		buffer.rewind();
 		buffer.get(dst);
+		return new String(dst).toString().trim();
+	}
+	//reads letter tokens ie identifiers, keywords, and text ops (AND etc)
+	private Token readIdentifier(char nextChar) throws LexicalError {
+		Token result;
+		while (Character.isDigit(nextChar) || Character.isLetter(nextChar)) {//read all the digits or letters we can
+			try { buffer.put(nextChar); }//put the char in the buffer
+			catch (BufferOverflowException|BufferUnderflowException e) {
+				throw LexicalError.IdentifierTooLong(buffer.toString());//don't allow overflow
+			}
+			nextChar = stream.currentChar();//get the next char
+		}
 
-		String value = new String(dst).toString().trim();
-		SymbolTableEntry lookup = keywordTable.lookup(value.toUpperCase());
+		if (!(nextChar == CharStream.BLANK)) {//if we overread something that wasn't a blank push it back
+			stream.pushBack(nextChar);
+		}
+		//construct return token
+		result = new Token();
+		String value = getBufferValue();
+		SymbolTableEntry lookup = keywordTable.lookup(value.toUpperCase());//Check for reserved keyword
 		if (lookup != null) {
 			result.setValue(value.toUpperCase());
-			handleTextOps(result);
+			handleTextOps(result);//helper to handle operations with text identifiers
 			if(result.getType() == null) {
 				result.setType(lookup.getType());
 			}
 		}
-		else {
+		else {//otherwise it's an identifer
 			result.setType(IDENTIFIER);
 			result.setValue(value);
 		}
 		return result;
 
 	}
+	//assigns types and optypes to text addops and mulops **VALUE MUST BE SET TO THE LEXEME
 	private void handleTextOps(Token token) {
 		if (token.getValue() != null) {
 			switch (token.getValue()) {
@@ -138,19 +149,35 @@ public class Tokenizer {
 			}
 		}
 	}
+	private char readDigits() throws LexicalError {
 
+		char nextChar = stream.currentChar();
+		try {
+			while (Character.isDigit(nextChar)) {
+				buffer.put(nextChar);
+				nextChar = stream.currentChar();
+			}
+		}
+		catch (BufferOverflowException|BufferUnderflowException e) {
+			throw LexicalError.IdentifierTooLong(buffer.toString());//don't allow overflow
+		}
+		return nextChar;
+	}
+
+//	private boolean checkPeak
+
+	//creates numerical tokens
 	private Token readNumber(char nextChar) throws LexicalError {
 		Token result;
 		char peek;
-		boolean realFlag = false;
+		boolean realFlag = false;//keeps track of whether or not we have a real number
 		//read as many digits as possible
-		while (Character.isDigit(nextChar)) {
-			try { buffer.put(nextChar); }
-			catch (BufferOverflowException e) {
-//				throw LexicalError.IdentifierTooLong(buffer.toString());
-			}
-			nextChar = stream.currentChar();
+		try {
+			buffer.put(nextChar);
+		} catch (BufferOverflowException|BufferUnderflowException e) {
+			throw LexicalError.IdentifierTooLong(buffer.toString());//don't allow overflow
 		}
+		nextChar = readDigits();
 		//if next char after digits is a .
 		if (nextChar == '.') {
 			peek = stream.currentChar();
@@ -161,41 +188,54 @@ public class Tokenizer {
 				try {
 					buffer.put(nextChar);
 					buffer.put(peek);
-					nextChar = stream.currentChar();
-					while (Character.isDigit(nextChar)) {
-						buffer.put(nextChar);
-						nextChar = stream.currentChar();
-					}
+				} catch (BufferOverflowException|BufferUnderflowException e) {
+					throw LexicalError.IdentifierTooLong(buffer.toString());//don't allow overflow
 				}
-				catch (BufferOverflowException e) {
-//					throw LexicalError.IdentifierTooLong(buffer.toString());
-				}
+				nextChar = readDigits();
 				//if we find an e try and form an exponent
 				if (nextChar == 'e') {
 					peek = stream.currentChar();
-					if (Character.isDigit(peek) || peek == '-' || peek == '+') {
-						try {
-							buffer.put(nextChar);
-							buffer.put(peek);
-							nextChar = stream.currentChar();
-							while (Character.isDigit(nextChar)) {
-								buffer.put(nextChar);
-								nextChar = stream.currentChar();
+					if (Character.isDigit(peek) || peek == '-' || peek == '+') {//check if valid format for exponent
+						if (peek == '-' || peek == '+') { //TODO: this ugly fix it
+							char peek2 = stream.currentChar();
+							if (Character.isDigit(peek2)) { //verifies valid format 3e-7
+								try {
+									buffer.put(nextChar);
+									buffer.put(peek);
+									buffer.put(peek2);
+								} catch (BufferOverflowException|BufferUnderflowException e) {
+									throw LexicalError.IdentifierTooLong(buffer.toString());//don't allow overflow
+								}
+								nextChar = readDigits();
+								if (!(nextChar == CharStream.BLANK)) {
+									stream.pushBack(nextChar);
+								}
+							}
+							else {
+								//TODO: throw malformed constant error
 							}
 						}
-						catch (BufferOverflowException e) {
-//							throw LexicalError.IdentifierTooLong(buffer.toString());
+						else if(Character.isDigit(peek)) {
+							try {
+								buffer.put(nextChar);
+								buffer.put(peek);
+							} catch (BufferOverflowException|BufferUnderflowException e) {
+								throw LexicalError.IdentifierTooLong(buffer.toString());//don't allow overflow
+							}
+
+							nextChar = readDigits();
+
+							if (!(nextChar == CharStream.BLANK)) {
+								stream.pushBack(nextChar);
+							}
 						}
 
-						if (!(nextChar == CharStream.BLANK)) {
-							stream.pushBack(nextChar);
-						}
 					}
+					//TODO: else throw a malformed constant error
 					else {
 						stream.pushBack(peek);
 						stream.pushBack(nextChar);
 					}
-					//TODO: else throw a malformed constant error
 				}
 				else {
 					if (!(nextChar == CharStream.BLANK)) {
@@ -215,7 +255,7 @@ public class Tokenizer {
 				//TODO: throw malformed constant error
 			}
 		}
-		else if (nextChar == 'e') {
+		else if (nextChar == 'e') { // handle scientific notation
 			peek = stream.currentChar();
 
 			if (Character.isDigit(peek) || peek == '-' || peek == '+') {
@@ -223,16 +263,10 @@ public class Tokenizer {
 				try {
 					buffer.put(nextChar);
 					buffer.put(peek);
-					nextChar = stream.currentChar();
-					while (Character.isDigit(nextChar)) {
-						buffer.put(nextChar);
-						nextChar = stream.currentChar();
-					}
+				} catch (BufferOverflowException|BufferUnderflowException e) {
+					throw LexicalError.IdentifierTooLong(buffer.toString());//don't allow overflow
 				}
-				catch (BufferOverflowException e) {
-//							throw LexicalError.IdentifierTooLong(buffer.toString());
-				}
-
+				nextChar = readDigits();
 				if (!(nextChar == CharStream.BLANK)) {
 					stream.pushBack(nextChar);
 				}
@@ -259,16 +293,14 @@ public class Tokenizer {
 			result.setType(INTCONSTANT);
 		}
 
-		result.setValue(buffer.rewind().toString());
+		result.setValue(getBufferValue());
 		return result;
 	}
 
+	//handle everything that is isn't identifiers or numbers
 	private Token readSymbol(char nextChar) throws LexicalError {
 		Token result = new Token();
 		char peek;
-//		if(nextChar == BLANK) {
-//			return readSymbol(stream.currentChar());
-//		}
 		switch (nextChar) {
 			case ',':
 				result.setType(COMMA);
@@ -363,8 +395,7 @@ public class Tokenizer {
 		return result;
 	}
 
-
-	//returns true if handled otherwise
+	//specific check for how + and - should be handled
 	private void handlePlusMinus(Token token) {
 		if (lastToken != null) {
 			switch (lastToken.getType()) {
