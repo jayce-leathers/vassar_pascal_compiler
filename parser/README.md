@@ -17,7 +17,7 @@ have two options:
 1. Use your own Lexical analyzer (recommended for maximum points). See below 
 for instuctions on configuring Maven to be able to find you lexical 
 analyzer.
-1. Use the model solution which is deployed to Maven. By default the project
+1. Use the model solution that is deployed to Maven. By default the project
 is configured to use the model solution for assignment one so nothing
 needs to be done if you want to use this option.
 
@@ -47,7 +47,8 @@ local repository.
 
 **Tip** It is recommended to use the model solution for the lexical analyzer
 until your parser is working.  This will allow you to focus on the parser and
-isolate parser bugs from lexer bugs.
+isolate parser bugs from lexer bugs. Once you've got it working with the model solution,
+you can begin to test with your own lexical analyzer.
 
 ## Bonus: Continuous Integrationg with Travis-CI
 
