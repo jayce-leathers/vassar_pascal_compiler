@@ -97,7 +97,7 @@ Travis can locate.
   1. Change the `username` property to your GitHub username. e.g.
   ```xml
   <properties>
-      <username>ksuderman</username>
+      <username>your-github-username</username>
   </properties>
   ```
   1. Uncomment the `<repository>` at the end of the file.  That is delete
