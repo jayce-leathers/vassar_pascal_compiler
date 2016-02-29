@@ -93,7 +93,7 @@ Travis can locate.
   $> git push https://github.com/your-name/mvn-repo
   ```
 1. Edit the `pom.xml` file for the parser project:
-  1. Change the `username` property to your GitHub username. E.G.
+  1. Change the `username` property to your GitHub username. e.g.
   ```xml
   <properties>
       <username>ksuderman</username>
@@ -103,11 +103,11 @@ Travis can locate.
   the line that starts with &lt;!-- and the line that starts with --&gt;
   
 **Note** If you make changes to your lexical analzyer don't forget to push the
-update version to your `mvn-repo` on GitHub or Travis will continue to
+updated version to your `mvn-repo` on GitHub or Travis will continue to
 use the old version.
 
 Once the setup is complete you should be able to connect to [https://education.travis-ci.com](https://education.travis-ci.com),
-connect with your GitHub account and see the private repository for your
+sign in with your GitHub account and see the private repository for your
 assignment listed.  If not, please post a message to the Google Group.
 
 The final step is to tell Travis to build your project when code is pushed to GitHub:
