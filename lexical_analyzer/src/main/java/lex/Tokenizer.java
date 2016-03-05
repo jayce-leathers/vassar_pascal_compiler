@@ -213,6 +213,8 @@ public class Tokenizer {
 							}
 							else {
 								//TODO: throw malformed constant error
+								///* Actually, you can just push stuff back
+								///* Don't throw an error here. Throw it in the parser.
 							}
 						}
 						else if(Character.isDigit(peek)) {
@@ -232,6 +234,7 @@ public class Tokenizer {
 
 					}
 					//TODO: else throw a malformed constant error
+					///* Don't throw an error here.
 					else {
 						stream.pushBack(peek);
 						stream.pushBack(nextChar);
@@ -253,6 +256,7 @@ public class Tokenizer {
 				stream.pushBack(peek);
 				stream.pushBack(nextChar);
 				//TODO: throw malformed constant error
+				///* Don't throw an error here.
 			}
 		}
 		else if (nextChar == 'e') { // handle scientific notation
@@ -276,6 +280,7 @@ public class Tokenizer {
 				stream.pushBack(nextChar);
 			}
 			//TODO: else throw a malformed constant error
+			///* Don't throw an error here.
 		}
 		else {
 
