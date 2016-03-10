@@ -16,12 +16,6 @@ public class SyntaxError extends CompilerError
 
 	   // Factory methods to generate the lexical exception types.
 
-	   public static SyntaxError BadToken(TokenType t, int line)
-	   {
-	      return new SyntaxError(Type.BAD_TOKEN,
-	                              ">>> ERROR on line " + line + " : unexpected " + t);
-	   }
-
 	public static SyntaxError BadToken(TokenType t, int line, String value)
 	{
 		return new SyntaxError(Type.BAD_TOKEN,
