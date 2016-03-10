@@ -65,6 +65,7 @@ public class Parser
                     else {
                         System.out.println(SyntaxError.BadToken(currentToken.getType(),tokenizer.getLineNumber(),
                                 "expected: " + predicted.toString() + " found: " + currentToken.toString()).getMessage());
+                        break;
                     }
 				}
 			}
@@ -78,6 +79,7 @@ public class Parser
                     else {
                         System.out.println(SyntaxError.BadToken(currentToken.getType(),tokenizer.getLineNumber(),
                                 "expected: " + predicted.toString() + " found: " + currentToken.toString()).getMessage());
+                        break;
                     }
                 }
 				else {
