@@ -2,9 +2,6 @@ package errors;
 
 import lex.TokenType;
 
-/**
- * @author Keith Suderman
- */
 public class SymbolTableError extends CompilerError
 {
 	public SymbolTableError(CompilerError.Type errorNumber, String message)

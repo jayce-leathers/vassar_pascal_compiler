@@ -1,17 +1,12 @@
 package symbolTable;
 
 import errors.SymbolTableError;
-import lex.TokenType;
-import lex.Tokenizer;
 import org.junit.*;
 
 import java.util.function.Function;
 
 import static org.junit.Assert.*;
 
-/**
- * @author Keith Suderman
- */
 public class SymbolTableTest
 {
 
@@ -39,7 +34,7 @@ public class SymbolTableTest
 	public void testInsert() throws SymbolTableError
 	{
 		System.out.println("SymbolTableTest.testInsert");
-		SymbolTableEntry expected = new SymbolTableEntry("foo", TokenType.INTCONSTANT);
+		SymbolTableEntry expected = new SymbolTableEntry("foo");
 		table.insert(expected);
 		SymbolTableEntry actual = (SymbolTableEntry) table.lookup("foo");
 		assertEquals(expected, actual);
@@ -50,7 +45,7 @@ public class SymbolTableTest
 	public void testDupicates() throws SymbolTableError
 	{
 		System.out.println("SymbolTableTest.testDupicates");
-		SymbolTableEntry entry = new SymbolTableEntry("foo", TokenType.INTCONSTANT);
+		SymbolTableEntry entry = new SymbolTableEntry("foo");
 		table.insert(entry);
 		table.insert(entry);
 	}

@@ -13,9 +13,6 @@ import java.util.stream.Stream;
 import static org.junit.Assert.*;
 
 
-/**
- * @author Keith Suderman
- */
 public class KeyworkTableTest
 {
 	private KeywordTable table;
