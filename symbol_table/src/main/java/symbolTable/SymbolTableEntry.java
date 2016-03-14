@@ -2,9 +2,6 @@ package symbolTable;
 
 import lex.TokenType;
 
-import java.util.Iterator;
-import java.util.List;
-
 public class SymbolTableEntry {
 
 	String name;
