@@ -11,31 +11,45 @@ public class SymbolTable {
 	private HashMap<String, SymbolTableEntry> symTable;
 
 	public SymbolTable() {
-
+		symTable = new HashMap<>();
 	}
 
 	public SymbolTable (int size)
 	{
-
+		symTable = new HashMap<>(size);
 	}
 
 	public SymbolTableEntry lookup (String key)
 	{
-		return null;
+		SymbolTableEntry result = symTable.get(key);
+		if(result == null) {
+
+		}
+		return result;
 	}
 
-	public void insert(SymbolTableEntry entry) throws SymbolTableError
+	public SymbolTableEntry insert(SymbolTableEntry entry) throws SymbolTableError
 	{
+		SymbolTableEntry result = symTable.putIfAbsent(entry.getName(), entry);
+		if (result == null) {
+			//insertion success
+			return result;
+		}
+		else {
+			//failure
+			throw SymbolTableError.DuplicateEntry(entry.getName());
+		}
 	}
 
 	public int size() {
-		return -1;
+		return symTable.size();
 	}
 
 	public void dumpTable () {
 	}
 
 	public static void installBuiltins(SymbolTable table) {
+
 	}
 
 }
