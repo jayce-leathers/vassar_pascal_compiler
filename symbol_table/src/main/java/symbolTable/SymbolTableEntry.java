@@ -5,7 +5,7 @@ import lex.TokenType;
 public class SymbolTableEntry {
 
 	String name;
-
+	boolean reserved = false;
 	TokenType type;
 
 	public SymbolTableEntry () {}
@@ -17,7 +17,12 @@ public class SymbolTableEntry {
 	public SymbolTableEntry (String name, TokenType type) {
 		this.name = name;
 		this.type = type;
-	} 
+	}
+
+	public void setReserved(boolean reserved) {
+		this.reserved = reserved;
+	}
+
 	public String getName() {
 		return name;
 	}
@@ -38,6 +43,6 @@ public class SymbolTableEntry {
 	public boolean isParameter() { return false; }  
 	public boolean isArray() { return false; } 
 	public boolean isConstant() { return false; }
-	public boolean isReserved() { return false; }
+	public boolean isReserved() { return reserved; }
 	
 }
