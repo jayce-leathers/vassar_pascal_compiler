@@ -35,6 +35,7 @@ public class SymbolTableEntry {
 	public void setType(TokenType type) {
 		this.type = type;
 	}
+
 	public boolean isVariable() { return false; } 
 	public boolean isKeyword() { return false; } 
 	public boolean isProcedure() { return false; } 

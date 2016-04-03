@@ -22,14 +22,5 @@ public class KeywordTable extends SymbolTable
 		insertQuietly(new KeywordEntry("MOD", TokenType.MULOP));
 	}
 
-	private void insertQuietly(KeywordEntry entry) {
-		try
-		{
-			this.insert(entry);
-		}
-		catch (SymbolTableError symbolTableError)
-		{
-			// Ignore
-		}
-	}
+
 }

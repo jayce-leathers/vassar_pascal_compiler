@@ -62,13 +62,21 @@ public class SymbolTable {
 					new IODeviceEntry("INPUT"),
 					new IODeviceEntry("OUTPUT"))
 					.forEach((entry) -> {
-						entry.setReserved(true);
-						try {
-							table.insert(entry);
-						} catch (SymbolTableError symbolTableError) {
-							symbolTableError.printStackTrace();
-						}
+							entry.setReserved(true);//reserve the keyword
+							table.insertQuietly(entry);//insert quietly
 					});
+	}
+
+	//moved from keywordtable in order to use here. protected for access in extended classes
+	protected void insertQuietly(SymbolTableEntry entry) {
+		try
+		{
+			this.insert(entry);
+		}
+		catch (SymbolTableError symbolTableError)
+		{
+			// Ignore
+		}
 	}
 
 }
