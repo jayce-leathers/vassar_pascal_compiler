@@ -24,10 +24,8 @@ a good time to create a single project.
   1. Select `File -> New -> Module from existing sources`
   1. Select the assignment directory
   1. Select `Import project from an external model`
-    a. Check `Maven`
-    a. Click `Next`
-  1. Accept the remaining defaults.
-  1. Be sure to select Java 8 as the JDK.
+  1. Select `Maven` and then Click `Next`
+  1. Accept the remaining defaults. Be sure to select Java 8 as the JDK.
 
 With all the assignments in a single project IntelliJ is pretty good at
 picking up code changes without having to run `mvn install`.
