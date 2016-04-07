@@ -1,9 +1,9 @@
 #  Semantic Actions: Phase One
 
-For the full list of instructions for the paser please refer to the
+For the full list of instructions for the semantic actions please refer to the
 [CS 331](http://www.cs.vassar.edu/~cs331) course page.
 
-Once again the project uses TDD (Test Driven Development); the default 
+Once again, the project uses TDD (Test Driven Development); the default 
 project contains a suite of unit tests.  Your job is to get all the tests
 to pass.  Feel free to write additional tests, in particular tests that
 should be rejected by the parser.
@@ -16,8 +16,8 @@ project the actions themselves are called by the parser.
 
 ### IntelliJ
 
-If you don't have all your assignments in a single project now might be a
-a good time to create a single project.
+If you don't have all your assignments in a single project, now might be a
+a good time to create a single project, as follows: 
 
 1. Create a new Empty Project in IntelliJ
 1. For each previous assignment
@@ -27,7 +27,7 @@ a good time to create a single project.
   1. Select `Maven` and then Click `Next`
   1. Accept the remaining defaults. Be sure to select Java 8 as the JDK.
 
-With all the assignments in a single project IntelliJ is pretty good at
+With all the assignments in a single project, IntelliJ is pretty good at
 picking up code changes without having to run `mvn install`.
 
 ### Parser Changes
@@ -46,6 +46,8 @@ picking up code changes without having to run `mvn install`.
 1. Handle the case where `stackTop.isAction()` is true to call the action's
 `execute` method.
 
+1. Create a `lookup` method that calls the lookup method in the semantic actions (in order to fetch things from the symbol table for debugging and testing purposes).
+
 1. Move the `semanticActions/SemanticActionsTest` class from the semantic-actions
 `src/test/resources` directory to the `src/test/java` directory in your parser project.
 
@@ -59,7 +61,7 @@ the class declaration.
 need to run `mvn install` again to install the fixed version into your
 local repository.
 
-## Continuous Integrationg with Travis-CI
+## Continuous Integration with Travis-CI
 
 If you have already set up [Travis-CI](https://education.travis-ci.com)
 for the Parser assignment you simply need to run `mvn install:install-file`
