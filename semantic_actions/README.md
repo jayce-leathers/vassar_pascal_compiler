@@ -14,9 +14,28 @@ This assignment is slighty different from the others as the `Parser` is still
 the `main` program.  While most of the code you write will go in the semantic-actions
 project the actions themselves are called by the parser.
 
+### IntelliJ
+
+If you don't have all your assignments in a single project now might be a
+a good time to create a single project.
+
+1. Create a new Empty Project in IntelliJ
+1. For each previous assignment
+  1. Select `File -> New -> Module from existing sources`
+  1. Select the assignment directory
+  1. Select `Import project from an external model`
+    a. Check `Maven`
+    a. Click `Next`
+  1. Accept the remaining defaults.
+  1. Be sure to select Java 8 as the JDK.
+
+With all the assignments in a single project IntelliJ is pretty good at
+picking up code changes without having to run `mvn install`.
+
 ### Parser Changes
 
 1. Add a dependency to your semantic-actions project
+
   ```xml
   <dependency>
       <groupId>edu.vassar.cs.cmpu331</groupId>    
@@ -24,7 +43,8 @@ project the actions themselves are called by the parser.
       <version>1.0.0</version>
   </dependency>
   ```
-
+  **NOTE** The above goes in the `pom.xml` file in your Parser project!
+  
 1. Handle the case where `stackTop.isAction()` is true to call the action's
 `execute` method.
 
@@ -40,10 +60,6 @@ the class declaration.
 **NOTE** If (when) you find and fix bugs in your other assignments you may
 need to run `mvn install` again to install the fixed version into your
 local repository.
-
-**NOTE** The starter project is configure to use the model solutions for
-the lexical-analyzer and symbol-table.  You will need to change this in the 
-`pom.xml` file to use your
 
 ## Continuous Integrationg with Travis-CI
 
