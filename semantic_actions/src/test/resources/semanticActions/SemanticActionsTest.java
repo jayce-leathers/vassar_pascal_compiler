@@ -22,11 +22,11 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 /**
- * @author Keith Suderman
+ *
  */
 public class SemanticActionsTest
 {
-	private static final File RESOURCE = new File("src/test/resources");
+	private static final File RESOURCE = new File("src/test/resources/phase1");
 
 	protected Parser parser;
 

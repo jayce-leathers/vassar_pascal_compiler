@@ -65,6 +65,11 @@ public class SemanticActions {
 		return null;
 	}
 
+	public ConstantEntry lookupConstant(Token token)
+	{
+		return null;
+	}
+
 	private void installBuiltins(SymbolTable table)
 	{
 

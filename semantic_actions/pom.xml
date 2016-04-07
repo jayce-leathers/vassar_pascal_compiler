@@ -9,8 +9,11 @@
         <version>1.0.0</version>
     </parent>
     <groupId>edu.vassar.cs.cmpu331</groupId>
-    <artifactId>semantic-actions-1</artifactId>
+    <artifactId>semantic-actions</artifactId>
     <version>1.0.0</version>
+    <properties>
+        <username>your-github-username</username>
+    </properties>
 
     <dependencies>
         <dependency>
@@ -20,19 +23,13 @@
         </dependency>
         <dependency>
             <groupId>edu.vassar.cs.cmpu331</groupId>
-            <artifactId>lexical-analyzer-model</artifactId>
+            <artifactId>lexical-analyzer</artifactId>
             <version>1.0.0</version>
         </dependency>
         <dependency>
             <groupId>edu.vassar.cs.cmpu331</groupId>
-            <artifactId>symbol-table-model</artifactId>
+            <artifactId>symbol-table</artifactId>
             <version>1.0.0</version>
-        </dependency>
-        <dependency>
-            <groupId>edu.vassar.cs.cmpu331</groupId>
-            <artifactId>parser-model</artifactId>
-            <version>1.0.0</version>
-            <scope>test</scope>
         </dependency>
     </dependencies>
     <reporting>
@@ -43,5 +40,14 @@
             </plugin>
         </plugins>
     </reporting>
+    <repositories>
+        <repository>
+            <id>github</id>
+            <name>GitHub as a Maven Repository</name>
+            <url>https://github.com/${username}/mvn-repo/raw/master</url>
+            <releases><enabled>true</enabled></releases>
+            <snapshots><enabled>true</enabled></snapshots>
+        </repository>
+    </repositories>
 
 </project>
