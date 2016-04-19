@@ -241,4 +241,18 @@ public class TokenizerTest
 	{
 		return TokenizerTest.class.getResource(url);
 	}
+
+	///* FIXME make this test pass
+	@Test
+	public void numTest() throws LexicalError, IOException {
+		System.out.println("TokenizerTest.numTest");
+		createTokenizerFor("6e- 6.5E+");
+		expect(INTCONSTANT);
+		expect(IDENTIFIER);
+		expect(ADDOP);
+		expect(REALCONSTANT);
+		expect(IDENTIFIER);
+		expect(ADDOP);
+		expect(ENDOFFILE);
+	}
 }
