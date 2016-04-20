@@ -16,13 +16,13 @@
     <!-- You must set the username property to your GitHub user name for the -->
     <!-- Travis Continuous Integration system to function correctly.         -->
     <properties>
-        <username>your-github-username</username>
+        <username>jayce-leathers</username>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>edu.vassar.cs.cmpu331</groupId>
-            <artifactId>lexical-analyzer-model</artifactId>
+            <artifactId>lexical-analyzer</artifactId>
             <version>1.0.0</version>
         </dependency>
         <dependency>
@@ -33,7 +33,7 @@
         <dependency>
             <groupId>edu.vassar.cs.cmpu331</groupId>
             <artifactId>symbol-table</artifactId>
-            <version>1.0.1</version>
+            <version>1.0.0</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -42,7 +42,7 @@
         </dependency>
     </dependencies>
 
-    <!-- Uncomment this section if you are using Travis-CI for continuous integration. (Bonus)
+    <!-- Uncomment this section if you are using Travis-CI for continuous integration. (Bonus) -->
     <repositories>
         <repository>
             <id>github</id>
@@ -52,5 +52,4 @@
             <snapshots><enabled>true</enabled></snapshots>
         </repository>
     </repositories>
-    -->
 </project>
