@@ -12,6 +12,11 @@
     <groupId>edu.vassar.cs.cmpu331</groupId>
     <artifactId>lexical-analyzer</artifactId>
     <version>1.0.0</version>
+
+    <properties>
+        <username>jayce-leathers</username>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>edu.vassar.cs.cmpu331</groupId>
@@ -24,4 +29,13 @@
             <version>1.0.0</version>
         </dependency>
     </dependencies>
+    <repositories>
+        <repository>
+            <id>github</id>
+            <name>GitHub as a Maven Repository</name>
+            <url>https://github.com/${username}/mvn-repo/raw/master</url>
+            <releases><enabled>true</enabled></releases>
+            <snapshots><enabled>true</enabled></snapshots>
+        </repository>
+    </repositories>
 </project>
