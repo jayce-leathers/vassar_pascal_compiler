@@ -212,7 +212,9 @@ public class Tokenizer {
 								}
 							}
 							else {
-								//TODO: throw malformed constant error
+								stream.pushBack(peek);
+								stream.pushBack(peek2);
+								stream.pushBack(nextChar);
 								///* Actually, you can just push stuff back
 								///* Don't throw an error here. Throw it in the parser.
 							}
@@ -233,7 +235,6 @@ public class Tokenizer {
 						}
 
 					}
-					//TODO: else throw a malformed constant error
 					///* Don't throw an error here.
 					else {
 						stream.pushBack(peek);
@@ -255,19 +256,43 @@ public class Tokenizer {
 				//this should error number or dot is required after decimal point
 				stream.pushBack(peek);
 				stream.pushBack(nextChar);
-				//TODO: throw malformed constant error
 				///* Don't throw an error here.
 			}
 		}
 		else if (nextChar == 'e') { // handle scientific notation
 			peek = stream.currentChar();
 
-			if (Character.isDigit(peek) || peek == '-' || peek == '+') {
+
+			if( peek == '-' || peek == '+') {
+				char peek2 = stream.currentChar();
+				//valid real 3.4e-4
+				if(Character.isDigit(peek2)) {
+					realFlag = true;
+					try {
+						buffer.put(nextChar);
+						buffer.put(peek);
+						buffer.put(peek2);
+					} catch (BufferOverflowException | BufferUnderflowException e) {
+						throw LexicalError.IdentifierTooLong(buffer.toString());//don't allow overflow
+					}
+					nextChar = readDigits();
+					if (!(nextChar == CharStream.BLANK)) {
+						stream.pushBack(nextChar);
+					}
+				}
+				// invalid 3.4e-
+				else {
+					stream.pushBack(peek2);
+					stream.pushBack(peek);
+					stream.pushBack(nextChar);
+				}
+			}
+			else if (Character.isDigit(peek)) {
 				realFlag = true;
 				try {
 					buffer.put(nextChar);
-					buffer.put(peek);
-				} catch (BufferOverflowException|BufferUnderflowException e) {
+					buffer.put(peek);;
+				} catch (BufferOverflowException | BufferUnderflowException e) {
 					throw LexicalError.IdentifierTooLong(buffer.toString());//don't allow overflow
 				}
 				nextChar = readDigits();
