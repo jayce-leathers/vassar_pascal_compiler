@@ -40,6 +40,11 @@
             <artifactId>junit</artifactId>
             <version>4.12</version>
         </dependency>
+        <dependency>
+            <groupId>edu.vassar.cs.cmpu331</groupId>
+            <artifactId>semantic-actions</artifactId>
+            <version>1.0.0</version>
+        </dependency>
     </dependencies>
 
     <!-- Uncomment this section if you are using Travis-CI for continuous integration. (Bonus) -->

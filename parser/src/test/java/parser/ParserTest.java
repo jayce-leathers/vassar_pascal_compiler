@@ -5,7 +5,7 @@ import java.io.*;
 import org.junit.*;
 import static org.junit.Assert.*;
 
-
+@Ignore
 public class ParserTest
 {
 	@Test
