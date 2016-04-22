@@ -1,6 +1,8 @@
 package semanticActions;
 
 import static errors.SemanticError.*;
+
+import errors.CompilerError;
 import errors.SemanticError;
 
 import errors.SymbolTableError;
@@ -74,7 +76,12 @@ public class SemanticActions {
 							try {
 								globalTable.insert(new ArrayEntry(id.getValue(),type,address,upperBound,lowerBound));
 							} catch (SymbolTableError symbolTableError) {
-								throw MultipleDeclaration(id.getValue(),tokenizer.getLineNumber());
+								if(globalTable.lookup(id.getValue()).isReserved()) {
+									throw ReservedName(id.getValue(),tokenizer.getLineNumber());
+								}
+								else {
+									throw MultipleDeclaration(id.getValue(),tokenizer.getLineNumber());
+								}
 							}
 						}
 						else {
@@ -95,7 +102,12 @@ public class SemanticActions {
 							try {
 								globalTable.insert(new VariableEntry(id.getValue(),type,address));
 							} catch (SymbolTableError symbolTableError) {
-								throw MultipleDeclaration(id.getValue(),tokenizer.getLineNumber());
+								if(globalTable.lookup(id.getValue()).isReserved()) {
+									throw ReservedName(id.getValue(),tokenizer.getLineNumber());
+								}
+								else {
+									throw MultipleDeclaration(id.getValue(),tokenizer.getLineNumber());
+								}
 							}
 						}
 						else {
@@ -105,6 +117,7 @@ public class SemanticActions {
 						}
 					}
 				}
+				isArray = false;
 				break;
 			case 4:
 				semanticStack.push(token);
@@ -117,20 +130,16 @@ public class SemanticActions {
 				break;
 			case 9:
 				Token id1 = (Token) semanticStack.pop();
-				IODeviceEntry entry1 = new IODeviceEntry(id1.getValue());
-				entry1.setReserved(true);
-				try {
-					globalTable.insert(entry1);
-				} catch (SymbolTableError symbolTableError) {
-					throw MultipleDeclaration(id1.getValue(),tokenizer.getLineNumber());
+				SymbolTableEntry result1 = globalTable.lookup(id1.getValue());
+				if(result1 == null){
+					throw new SemanticError(Type.RESERVED_NAME,
+							">>> ERROR on line " + tokenizer.getLineNumber() + " : Expected Input IO Declaration Not Found");
 				}
 				Token id2 = (Token) semanticStack.pop();
-				IODeviceEntry entry2 = new IODeviceEntry(id2.getValue());
-				entry2.setReserved(true);
-				try {
-					globalTable.insert(entry2);
-				} catch (SymbolTableError symbolTableError) {
-					throw MultipleDeclaration(id2.getValue(),tokenizer.getLineNumber());
+				SymbolTableEntry result2 = globalTable.lookup(id2.getValue());
+				if(result2 == null){
+					throw new SemanticError(Type.RESERVED_NAME,
+							">>> ERROR on line " + tokenizer.getLineNumber() + " : Expected Input IO Declaration Not Found");
 				}
 				Token id3 = (Token) semanticStack.pop();
 				ProcedureEntry entry3 = new ProcedureEntry(id3.getValue(),id3.getType(),0,null);
