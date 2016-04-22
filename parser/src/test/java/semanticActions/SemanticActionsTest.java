@@ -1,9 +1,6 @@
 package semanticActions;
 
-import errors.CompilerError;
-import errors.LexicalError;
-import errors.SemanticError;
-import errors.SyntaxError;
+import errors.*;
 import lex.TokenType;
 import org.junit.After;
 import org.junit.Test;
@@ -36,21 +33,18 @@ public class SemanticActionsTest
 		parser = null;
 	}
 
-	protected void init(String filename) throws IOException, LexicalError, SyntaxError, SemanticError
-	{
+	protected void init(String filename) throws IOException, LexicalError, SyntaxError, SemanticError, SymbolTableError {
 		init(new File(RESOURCE, filename));
 	}
 
-	protected void init(File file) throws IOException, LexicalError, SemanticError, SyntaxError
-	{
+	protected void init(File file) throws IOException, LexicalError, SemanticError, SyntaxError, SymbolTableError {
 		assertTrue("File not found:" + file.getPath(), file.exists());
 		parser = new Parser(file);
 		parser.parse();
 	}
 
 	@Test
-	public void testBuiltIns() throws LexicalError, SemanticError, SyntaxError, IOException
-	{
+	public void testBuiltIns() throws LexicalError, SemanticError, SyntaxError, IOException, SymbolTableError {
 		System.out.println("SemanticActionsTest.testBuiltIns");
 		init("builtins.pas");
 		checkBuiltIn("main");
@@ -69,8 +63,7 @@ public class SemanticActionsTest
 	}
 
 	@Test
-	public void testCaseSensitive() throws LexicalError, SemanticError, SyntaxError, IOException
-	{
+	public void testCaseSensitive() throws LexicalError, SemanticError, SyntaxError, IOException, SymbolTableError {
 		System.out.println("SemanticActionsTest.testCaseSensitive");
 		init("variable_test.pas");
 		SymbolTableEntry a = parser.lookup("a");
@@ -81,8 +74,7 @@ public class SemanticActionsTest
 	}
 
 	@Test
-	public void variableTest() throws IOException, LexicalError, SemanticError, SyntaxError
-	{
+	public void variableTest() throws IOException, LexicalError, SemanticError, SyntaxError, SymbolTableError {
 		System.out.println("SemanticActionsTest.variableTest");
 		init("variable_test.pas");
 		checkVariable("a", TokenType.INTEGER, 1);
@@ -91,8 +83,7 @@ public class SemanticActionsTest
 	}
 
 	@Test
-	public void arrayDeclTest() throws IOException, LexicalError, SemanticError, SyntaxError
-	{
+	public void arrayDeclTest() throws IOException, LexicalError, SemanticError, SyntaxError, SymbolTableError {
 		System.out.println("SemanticActionsTest.arrayDeclTest");
 		init("array_decl_test.pas");
 		checkArrayEntry("x", TokenType.REAL, 0, 1, 5);
@@ -100,8 +91,7 @@ public class SemanticActionsTest
 	}
 
 	@Test
-	public void bigTest() throws LexicalError, SemanticError, SyntaxError, IOException
-	{
+	public void bigTest() throws LexicalError, SemanticError, SyntaxError, IOException, SymbolTableError {
 		System.out.println("SemanticActionsTest.bigTest");
 		init("big_test.pas");
 		checkVariable("a", TokenType.INTEGER, 1);
@@ -143,6 +133,8 @@ public class SemanticActionsTest
 		catch (SemanticError e)
 		{
 			assertEquals("Wrong exception type thrown", expected, e.getType());
+		} catch (SymbolTableError symbolTableError) {
+			symbolTableError.printStackTrace();
 		}
 	}
 
@@ -218,6 +210,8 @@ public class SemanticActionsTest
 
 		assertEquals("Invalid symbol table entry for " + e.getName(), expected, count);
 	}
+
+
 
 
 }

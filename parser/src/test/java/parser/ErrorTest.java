@@ -1,6 +1,6 @@
 package parser;
 
-import errors.CompilerError;
+import errors.*;
 import org.junit.After;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -34,7 +35,7 @@ public class ErrorTest
 	}
 
 	@Test
-	public void unexpectedEnd() throws IOException, CompilerError
+	public void unexpectedEnd() throws IOException
 	{
 		String code = "Program theProgram(input,output);\n" +
 				  "var\n" +
@@ -44,13 +45,18 @@ public class ErrorTest
 				  "begin\n";
 
 		createTempFile(code);
-		Parser parser = new Parser(file);
-		parser.parse();
+		Parser parser = null;
+		try {
+			parser = new Parser(file);
+			parser.parse();
+		} catch (CompilerError e) {
+			e.printStackTrace();
+		}
 		assertTrue(parser.error());
 	}
 
 	@Test
-	public void missingSemiColon() throws IOException, CompilerError
+	public void missingSemiColon() throws IOException
 	{
 		String code = "Program theProgram(input,output);\n" +
 				  "var\n" +
@@ -61,8 +67,13 @@ public class ErrorTest
 				  "end\n";
 
 		createTempFile(code);
-		Parser parser = new Parser(file);
-		parser.parse();
+		Parser parser = null;
+		try {
+			parser = new Parser(file);
+			parser.parse();
+		} catch (CompilerError e){
+			e.printStackTrace();
+		}
 		assertTrue(parser.error());
 	}
 
@@ -82,6 +93,5 @@ public class ErrorTest
 		writer.close();
 
 	}
-
 
 }

@@ -8,6 +8,7 @@ package parser;
 
 import errors.LexicalError;
 import errors.SemanticError;
+import errors.SymbolTableError;
 import errors.SyntaxError;
 import grammar.GrammarSymbol;
 import grammar.NonTerminal;
@@ -34,6 +35,7 @@ public class Parser
 	private SemanticActions semanticActions;
 	private Tokenizer tokenizer;
 	private Token currentToken;
+	private Token lastToken;
 
 	private Boolean errored = false;
 
@@ -49,7 +51,7 @@ public class Parser
 		semanticActions = new SemanticActions(tokenizer);
 	}
 
-	public void parse () throws SyntaxError, LexicalError, SemanticError {
+	public void parse () throws SyntaxError, LexicalError, SemanticError, SymbolTableError {
 		GrammarSymbol predicted;
 		currentToken = tokenizer.getNextToken();
 		stack.clear();
@@ -60,6 +62,7 @@ public class Parser
 			predicted = stack.pop();
 			if (predicted.isToken()) {
 				if (currentToken.getType() == predicted) {
+					lastToken = currentToken;
 					currentToken = tokenizer.getNextToken();
 				}
 				else { //current != predicted
@@ -81,9 +84,8 @@ public class Parser
                         handleError(predicted);
                     }
                     else {
-                        System.out.println(SyntaxError.BadToken(currentToken.getType(),tokenizer.getLineNumber(),
-                                "expected: " + predicted.toString() + " found: " + currentToken.toString()).getMessage());
-                        break;
+						throw SyntaxError.BadToken(currentToken.getType(),tokenizer.getLineNumber(),
+								"expected: " + predicted.toString() + " found: " + currentToken.toString());
                     }
                 }
 				else {
@@ -96,20 +98,19 @@ public class Parser
 				}
 			}
 			else {//predicted is action
-			semanticActions.execute(((SemanticAction)predicted).getIndex(),currentToken);
+//				currentToken = tokenizer.getNextToken();
+				semanticActions.execute(((SemanticAction)predicted).getIndex(),lastToken);
 			}
 		}
 	}
 
-	private SymbolTableEntry lookup(String name){
+	public SymbolTableEntry lookup(String name){
 		return semanticActions.lookup(name);
 	}
 
     private void dumpStack() {
         if(DEBUGGING) {
-            stack.forEach((x)-> {
-                System.out.println(x.toString());
-            });
+            stack.forEach(x-> System.out.println(x.toString()));
         }
     }
 
