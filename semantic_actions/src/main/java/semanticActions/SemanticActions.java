@@ -12,7 +12,6 @@ import lex.Token;
 import lex.Token.OperatorType;
 import lex.TokenType;
 import lex.Tokenizer;
-import sun.jvm.hotspot.debugger.cdbg.Sym;
 import symbolTable.*;
 
 import java.util.Stack;
