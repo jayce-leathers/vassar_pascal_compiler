@@ -104,6 +104,10 @@ public class Parser
 		}
 	}
 
+	public void printTVI() {
+		semanticActions.printTVI();
+	}
+
 	public SymbolTableEntry lookup(String name){
 		return semanticActions.lookup(name);
 	}
