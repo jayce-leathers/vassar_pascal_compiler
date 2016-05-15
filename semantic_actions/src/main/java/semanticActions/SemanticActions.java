@@ -187,7 +187,7 @@ public class SemanticActions {
 			case 30: {
 				SymbolTableEntry id = globalTable.lookup(token.getValue());
 				if (id == null) {
-					throw UndeclaredVariable(id.getName(), tokenizer.getLineNumber());
+					throw UndeclaredVariable(token.getValue(), tokenizer.getLineNumber());
 				}
 				semanticStack.push(id);
 				semanticStack.push(ETYPE.ARITHMETIC);
@@ -198,7 +198,7 @@ public class SemanticActions {
 				if (etype != ETYPE.ARITHMETIC) {
 					throw ETypeMismatch(tokenizer.getLineNumber());
 				} else {
-					VariableEntry id2 = (VariableEntry) semanticStack.pop();
+					SymbolTableEntry id2 = (SymbolTableEntry) semanticStack.pop();
 					Object offset = semanticStack.pop();
 					SymbolTableEntry id1 = (SymbolTableEntry) semanticStack.pop();
 					int typeCheckResult = typeCheck(id1, id2);
@@ -211,6 +211,9 @@ public class SemanticActions {
 						if (offset == OFFSET.NULL) {
 							generate("move", temp, id1);
 						}
+						else {
+							generate("stor", temp, (SymbolTableEntry) offset,id1);
+						}
 					} else if (offset == OFFSET.NULL) {
 						generate("move", id2, id1);
 					} else {
@@ -221,7 +224,10 @@ public class SemanticActions {
 				break;
 			case 32:
 			{
-				semanticStack.pop();//pop etype?
+				ETYPE etype = (ETYPE) semanticStack.pop();//pop etype?
+				if(etype != ETYPE.ARITHMETIC) {
+					throw ETypeMismatch(tokenizer.getLineNumber());
+				}
 				SymbolTableEntry id = (SymbolTableEntry) semanticStack.peek();
 				if(!id.isArray()) {
 					throw NotArray(tokenizer.getLineNumber());
@@ -238,6 +244,7 @@ public class SemanticActions {
 					throw InvalidSubscript(tokenizer.getLineNumber());
 				}
 				VariableEntry temp = create(TokenType.INTEGER);
+				//MARK: maybe semanticstack.lastElement
 				ArrayEntry arrayEntry = (ArrayEntry) semanticStack.lastElement();
 				ConstantEntry lbound = new ConstantEntry(Integer.toString(arrayEntry.getLBound()),TokenType.INTEGER);
 				generate("sub",id,lbound,temp);
@@ -252,23 +259,45 @@ public class SemanticActions {
 				} else {
 					semanticStack.push(OFFSET.NULL);
 				}
-
 			}
 				break;
-			case 40:
+			case 40://uminus uplus
 				semanticStack.push(token);
 				break;
-			case 42: {
+			case 41: //uminus uplus
 				ETYPE etype = (ETYPE) semanticStack.pop();
 				if (etype == ETYPE.ARITHMETIC) {
 					semanticStack.push(token);
 				}
-			}break;
+				Token sign = (Token) semanticStack.pop();
+				SymbolTableEntry id = (SymbolTableEntry) semanticStack.pop();
+				if (sign.getType() == TokenType.UNARYMINUS) {
+					VariableEntry temp = create(id.getType());
+					generate("uminus", id, temp);
+					semanticStack.push(temp);
+				} else {
+					semanticStack.push(id);
+				}
+				semanticStack.push(ETYPE.ARITHMETIC);
+			break;
+			case 42:
+				etype = (ETYPE) semanticStack.pop();
+				if(token.getOpType() == OR) {
+					//TODO: RELATIONAL
+				} else {
+					if(etype != ETYPE.ARITHMETIC) {
+						throw ETypeMismatch(tokenizer.getLineNumber());
+					}
+				}
+				semanticStack.push(token);
+				break;
 			case 43: {
-				ETYPE etype = (ETYPE) semanticStack.pop();
-				VariableEntry id2 = (VariableEntry) semanticStack.pop();
+				//TODO: RELATIONAL CHANGES
+				etype = (ETYPE) semanticStack.pop();
+				//TODO:check order of pops
+				SymbolTableEntry id2 = (SymbolTableEntry) semanticStack.pop();
 				Token operator = (Token) semanticStack.pop();
-				VariableEntry id1 = (VariableEntry) semanticStack.pop();
+				SymbolTableEntry id1 = (SymbolTableEntry) semanticStack.pop();
 				if (etype != ETYPE.ARITHMETIC) {
 					throw ETypeMismatch(tokenizer.getLineNumber());
 				}
@@ -323,11 +352,12 @@ public class SemanticActions {
 			}
 				break;
 			case 44:
+				//TODO:RELATIONAL
 				semanticStack.pop();
 				semanticStack.push(token);
 				break;
 			case 45: {
-				ETYPE etype = (ETYPE) semanticStack.pop();
+				etype = (ETYPE) semanticStack.pop();
 				SymbolTableEntry id1 = (SymbolTableEntry) semanticStack.pop();
 				Token operator = (Token) semanticStack.pop();
 				SymbolTableEntry id2 = (SymbolTableEntry) semanticStack.pop();
@@ -471,15 +501,22 @@ public class SemanticActions {
 				semanticStack.push(ETYPE.ARITHMETIC);
 				break;
 			case 48:
+				//TODO: VERIFY pop order
 				Object offset =  semanticStack.pop();
 				if (offset != OFFSET.NULL) {
-					semanticStack.pop();//pop Etype which apparently we don't need?
-					SymbolTableEntry id = (SymbolTableEntry) semanticStack.pop();
+					id = (SymbolTableEntry) semanticStack.pop();
+//					semanticStack.pop();//pop Etype which apparently we don't need?
 					VariableEntry temp = create(id.getType());
 					generate("load", id, (SymbolTableEntry) offset,temp);
 					semanticStack.push(temp);
 				}
 				semanticStack.push(ETYPE.ARITHMETIC);
+				break;
+			case 53:
+
+				break;
+			case 54:
+
 				break;
 			case 55:
 				//backPatch(globalStore,globalMemory);
@@ -492,8 +529,30 @@ public class SemanticActions {
 				globalStore = quads.getNextQuad();
 				generate("alloc","");
 				break;
-
-
+			case 57:
+				ConstantEntry constant = (ConstantEntry) constantTable.lookup(token.getValue());
+				if(constant == null) {
+					try {
+						constant = new ConstantEntry(token.getValue(),TokenType.INTEGER);
+						constantTable.insert(constant);
+					} catch (SymbolTableError symbolTableError) {
+						//never executes
+					}
+				}
+				token.setEntry(constant);
+				break;
+			case 58:
+				constant = (ConstantEntry) constantTable.lookup(token.getValue());
+				if(constant == null) {
+					try {
+						constant = new ConstantEntry(token.getValue(),TokenType.REAL);
+						constantTable.insert(constant);
+					} catch (SymbolTableError symbolTableError) {
+						//never executes
+					}
+				}
+				token.setEntry(constant);
+				break;
 			default:
 				// TODO Eventually (i.e. final project) this should throw an exception.
 				debug("Action " + actionNumber + " not yet implemented.");
