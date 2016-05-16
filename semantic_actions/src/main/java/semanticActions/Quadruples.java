@@ -2,6 +2,8 @@ package semanticActions;
 
 import grammar.GrammarSymbol;
 import java.util.*;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import symbolTable.SymbolTableEntry;
 
@@ -40,6 +42,14 @@ public class Quadruples {
         return (String []) Quadruple.elementAt(index);
     }
 
+    public void setTargetQuad(int quadIndex, String field) {
+        String[] targetQuad = Quadruple.get(quadIndex);
+        for(int i = 0;i < targetQuad.length; i++) {
+            if(targetQuad[i] == "_") {
+                targetQuad[i] = field;
+            }
+        }
+    }
     public void addQuad(String[] quad) {
         Quadruple.add(nextQuad, quad);
         nextQuad++;

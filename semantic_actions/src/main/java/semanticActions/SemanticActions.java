@@ -3,7 +3,10 @@ package semanticActions;
 import static errors.SemanticError.*;
 import static java.lang.Math.abs;
 import static lex.Token.OperatorType.*;
+import static semanticActions.SemanticActions.ETYPE.*;
+import static semanticActions.SemanticActions.ETYPE.RELATIONAL;
 
+import com.sun.org.apache.regexp.internal.RE;
 import errors.CompilerError;
 import errors.SemanticError;
 
@@ -14,6 +17,7 @@ import lex.TokenType;
 import lex.Tokenizer;
 import symbolTable.*;
 
+import java.util.LinkedList;
 import java.util.Stack;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -33,7 +37,11 @@ public class SemanticActions {
 	private SymbolTable globalTable ;
 	private SymbolTable localTable ;
 	private SymbolTable constantTable ;
-
+	private SymbolTableEntry currentFunction;
+	private LinkedList<Integer> ETrue;
+	private LinkedList<Integer> EFalse;
+	private LinkedList<Integer> SKIP_ELSE;
+	private int beginLoop;
 	public  enum ETYPE {
 		ARITHMETIC,RELATIONAL
 	}
@@ -184,18 +192,60 @@ public class SemanticActions {
 			case 13:
 				semanticStack.push(token);
 				break;
+			case 22:
+				ETYPE etype = (ETYPE) semanticStack.pop();
+				if(etype != RELATIONAL) {
+					throw ETypeMismatch(tokenizer.getLineNumber());
+				}
+				backPatch(ETrue,Integer.toString(quads.getNextQuad()));
+				break;
+			case 24:
+				beginLoop = quads.getNextQuad();
+				semanticStack.push(beginLoop);
+				break;
+			case 25:
+				etype = (ETYPE) semanticStack.pop();
+				if(etype != RELATIONAL) {
+					throw ETypeMismatch(tokenizer.getLineNumber());
+				}
+				backPatch(ETrue, Integer.toString(quads.getNextQuad()));
+				break;
+			case 26:
+				LinkedList Efalse1 = (LinkedList) semanticStack.pop();
+				semanticStack.pop();//pop etrue
+				int beginLoop1 = (int) semanticStack.pop();
+				generate("goto", Integer.toString(beginLoop1));
+				backPatch(Efalse1, Integer.toString(quads.getNextQuad()));
+				break;
+			case 27:
+				SKIP_ELSE = makeList(quads.getNextQuad());
+				semanticStack.push(SKIP_ELSE);
+				generate("goto","_");
+				backPatch(EFalse, Integer.toString(quads.getNextQuad()));
+				break;
+			case 28:
+				LinkedList SKIP_ELSE1 = (LinkedList) semanticStack.pop();
+				backPatch(SKIP_ELSE1, Integer.toString(quads.getNextQuad()));
+				semanticStack.pop();
+				semanticStack.pop();
+				break;
+			case 29:
+				LinkedList EFalse1 = (LinkedList) semanticStack.pop();
+				semanticStack.pop();
+				backPatch(EFalse1,Integer.toString(quads.getNextQuad()));
+				break;
 			case 30: {
 				SymbolTableEntry id = globalTable.lookup(token.getValue());
 				if (id == null) {
 					throw UndeclaredVariable(token.getValue(), tokenizer.getLineNumber());
 				}
 				semanticStack.push(id);
-				semanticStack.push(ETYPE.ARITHMETIC);
+				semanticStack.push(ARITHMETIC);
 			}
 				break;
 			case 31: {
-				ETYPE etype = (ETYPE) semanticStack.pop();
-				if (etype != ETYPE.ARITHMETIC) {
+				etype = (ETYPE) semanticStack.pop();
+				if (etype != ARITHMETIC) {
 					throw ETypeMismatch(tokenizer.getLineNumber());
 				} else {
 					SymbolTableEntry id2 = (SymbolTableEntry) semanticStack.pop();
@@ -224,8 +274,8 @@ public class SemanticActions {
 				break;
 			case 32:
 			{
-				ETYPE etype = (ETYPE) semanticStack.pop();//pop etype?
-				if(etype != ETYPE.ARITHMETIC) {
+				etype = (ETYPE) semanticStack.pop();
+				if(etype != ARITHMETIC) {
 					throw ETypeMismatch(tokenizer.getLineNumber());
 				}
 				SymbolTableEntry id = (SymbolTableEntry) semanticStack.peek();
@@ -235,8 +285,8 @@ public class SemanticActions {
 			}
 				break;
 			case 33: {
-				ETYPE etype = (ETYPE) semanticStack.pop();
-				if (etype != ETYPE.ARITHMETIC) {
+				etype = (ETYPE) semanticStack.pop();
+				if (etype != ARITHMETIC) {
 					throw ETypeMismatch(tokenizer.getLineNumber());
 				}
 				SymbolTableEntry id = (SymbolTableEntry) semanticStack.pop();
@@ -244,7 +294,6 @@ public class SemanticActions {
 					throw InvalidSubscript(tokenizer.getLineNumber());
 				}
 				VariableEntry temp = create(TokenType.INTEGER);
-				//MARK: maybe semanticstack.lastElement
 				ArrayEntry arrayEntry = (ArrayEntry) semanticStack.lastElement();
 				ConstantEntry lbound = new ConstantEntry(Integer.toString(arrayEntry.getLBound()),TokenType.INTEGER);
 				generate("sub",id,lbound,temp);
@@ -261,134 +310,237 @@ public class SemanticActions {
 				}
 			}
 				break;
+			case 38:
+				etype = (ETYPE) semanticStack.pop();
+				if(etype != ARITHMETIC) {
+					throw ETypeMismatch(tokenizer.getLineNumber());
+				}
+				semanticStack.push(token);
+				break;
+			case 39:
+				etype = (ETYPE) semanticStack.pop();
+				if (etype != ARITHMETIC){
+					throw ETypeMismatch(tokenizer.getLineNumber());
+				}
+				SymbolTableEntry id2 = (SymbolTableEntry) semanticStack.pop();
+				Token operator = (Token) semanticStack.pop();
+				SymbolTableEntry id1 = (SymbolTableEntry) semanticStack.pop();
+				int typeCheck = typeCheck(id1,id2);
+				String tviCode;
+
+				switch (operator.getOpType()) {
+					case LESSTHAN:
+						tviCode = "blt";
+						break;
+					case  LESSTHANOREQUAL:
+						tviCode = "ble";
+						break;
+					case GREATERTHAN:
+						tviCode = "bgt";
+						break;
+					case GREATERTHANOREQUAL:
+						tviCode = "bge";
+						break;
+					case EQUAL:
+						tviCode = "beq";
+						break;
+					case NOTEQUAL:
+						tviCode = "bne";
+						break;
+					default:
+						tviCode = "ERROR";
+						break;
+				}
+				VariableEntry temp;
+				switch (typeCheck) {
+					case 0:
+					case 1:
+						generate(tviCode, id1,id2,"_");
+						break;
+					case 2:
+						temp = create(TokenType.REAL);
+						generate("ltof", id2, temp);
+						generate(tviCode,id1,temp,"_");
+						break;
+					case 3:
+						temp = create(TokenType.REAL);
+						generate("ltof", id1, temp);
+						generate(tviCode,temp,id2,"_");
+						break;
+				}
+				generate("goto","_");
+				int nextQuad = quads.getNextQuad();
+				ETrue = makeList(nextQuad - 2);
+				EFalse = makeList(nextQuad - 1);
+				semanticStack.push(ETrue);
+				semanticStack.push(EFalse);
+				semanticStack.push(RELATIONAL);
+				break;
 			case 40://uminus uplus
 				semanticStack.push(token);
 				break;
 			case 41: //uminus uplus
-				ETYPE etype = (ETYPE) semanticStack.pop();
-				if (etype == ETYPE.ARITHMETIC) {
-					semanticStack.push(token);
+				etype = (ETYPE) semanticStack.pop();
+				if (etype != ARITHMETIC) {
+					throw ETypeMismatch(tokenizer.getLineNumber());
 				}
-				Token sign = (Token) semanticStack.pop();
 				SymbolTableEntry id = (SymbolTableEntry) semanticStack.pop();
+				Token sign = (Token) semanticStack.pop();
 				if (sign.getType() == TokenType.UNARYMINUS) {
-					VariableEntry temp = create(id.getType());
+					temp = create(id.getType());
 					generate("uminus", id, temp);
 					semanticStack.push(temp);
 				} else {
 					semanticStack.push(id);
 				}
-				semanticStack.push(ETYPE.ARITHMETIC);
+				semanticStack.push(ARITHMETIC);
 			break;
 			case 42:
 				etype = (ETYPE) semanticStack.pop();
 				if(token.getOpType() == OR) {
-					//TODO: RELATIONAL
+					if (etype != RELATIONAL)	{
+						throw ETypeMismatch(tokenizer.getLineNumber());
+					}
+					backPatch(EFalse, Integer.toString(quads.getNextQuad()));
 				} else {
-					if(etype != ETYPE.ARITHMETIC) {
+					if(etype != ARITHMETIC) {
 						throw ETypeMismatch(tokenizer.getLineNumber());
 					}
 				}
 				semanticStack.push(token);
 				break;
 			case 43: {
-				//TODO: RELATIONAL CHANGES
 				etype = (ETYPE) semanticStack.pop();
-				//TODO:check order of pops
-				SymbolTableEntry id2 = (SymbolTableEntry) semanticStack.pop();
-				Token operator = (Token) semanticStack.pop();
-				SymbolTableEntry id1 = (SymbolTableEntry) semanticStack.pop();
-				if (etype != ETYPE.ARITHMETIC) {
-					throw ETypeMismatch(tokenizer.getLineNumber());
-				}
-				String tvicode;
+				if (etype == RELATIONAL) {
+					LinkedList EFalse2 = (LinkedList) semanticStack.pop();
+					LinkedList ETrue2 = (LinkedList) semanticStack.pop();
+					operator = (Token) semanticStack.pop();
+					EFalse1 = (LinkedList) semanticStack.pop();
+					LinkedList ETrue1 = (LinkedList) semanticStack.pop();
+//					semanticStack.pop(); //Pop etype?
+					ETrue = merge(ETrue1,ETrue2);
+					EFalse = EFalse2;
+					semanticStack.push(ETrue);
+					semanticStack.push(EFalse);
+					semanticStack.push(RELATIONAL);
+				} else {
+					//TODO:check order of pops
+					id2 = (SymbolTableEntry) semanticStack.pop();
+					operator = (Token) semanticStack.pop();
+					id1 = (SymbolTableEntry) semanticStack.pop();
+					if (etype != ARITHMETIC) {
+						throw ETypeMismatch(tokenizer.getLineNumber());
+					}
+					String tvicode;
 
-				switch (operator.getOpType()) {
-					case ADD:
-						tvicode = "add";
-						break;
-					case SUBTRACT:
-						tvicode = "sub";
-						break;
-					case MULTIPLY:
-						tvicode = "mul";
-						break;
-					case DIVIDE:
-					case INTEGERDIVIDE:
-						tvicode = "div";
-						break;
-					default:
-						tvicode = "ERROR";
-						break;
+					switch (operator.getOpType()) {
+						case ADD:
+							tvicode = "add";
+							break;
+						case SUBTRACT:
+							tvicode = "sub";
+							break;
+						case MULTIPLY:
+							tvicode = "mul";
+							break;
+						case DIVIDE:
+						case INTEGERDIVIDE:
+							tvicode = "div";
+							break;
+						default:
+							tvicode = "ERROR";
+							break;
+					}
+					int typeCheckResult = typeCheck(id1, id2);
+					VariableEntry temp2;
+					if (typeCheckResult == 0) {
+						temp = create(TokenType.INTEGER);
+						generate(tvicode, id1, id2, temp);
+						semanticStack.push(temp);
+					} else if (typeCheckResult == 1) {
+						temp = create(TokenType.REAL);
+						generate("f" + tvicode, id1, id2, temp);
+						semanticStack.push(temp);
+					} else if (typeCheckResult == 2) {
+						temp = create(TokenType.REAL);
+						generate("ltof", id2, temp);
+						temp2 = create(TokenType.REAL);
+						generate("f" + tvicode, id1, temp, temp2);
+						semanticStack.push(temp2);
+					} else {
+						temp = create(TokenType.REAL);
+						generate("ltof", id1, temp);
+						temp2 = create(TokenType.REAL);
+						generate("f" + tvicode, id2, temp, temp2);
+						semanticStack.push(temp2);
+					}
+					semanticStack.push(ARITHMETIC);
 				}
-				int typeCheckResult = typeCheck(id1, id2);
-				VariableEntry temp;
-				VariableEntry temp2;
-				if (typeCheckResult == 0) {
-					temp = create(TokenType.INTEGER);
-					generate(tvicode,id1,id2,temp);
-					semanticStack.push(temp);
-				}
-				else if (typeCheckResult == 1) {
-					temp = create(TokenType.REAL);
-					generate("f" + tvicode,id1,id2,temp);
-					semanticStack.push(temp);
-				}
-				else if (typeCheckResult == 2) {
-					temp = create(TokenType.REAL);
-					generate("ltof",id2,temp);
-					temp2 = create(TokenType.REAL);
-					generate("f" + tvicode, id1,temp, temp2);
-					semanticStack.push(temp2);
-				}
-				else {
-					temp = create(TokenType.REAL);
-					generate("ltof",id1,temp);
-					temp2 = create(TokenType.REAL);
-					generate("f" + tvicode, id2,temp, temp2);
-					semanticStack.push(temp2);
-				}
-				semanticStack.push(ETYPE.ARITHMETIC);
 			}
 				break;
 			case 44:
 				//TODO:RELATIONAL
-				semanticStack.pop();
+				etype = (ETYPE) semanticStack.pop();
+				if (etype == RELATIONAL) {
+					if(token.getOpType() == AND) {
+						backPatch(ETrue, Integer.toString(quads.getNextQuad()));
+					}
+				}
 				semanticStack.push(token);
 				break;
 			case 45: {
 				etype = (ETYPE) semanticStack.pop();
-				SymbolTableEntry id1 = (SymbolTableEntry) semanticStack.pop();
-				Token operator = (Token) semanticStack.pop();
-				SymbolTableEntry id2 = (SymbolTableEntry) semanticStack.pop();
-				if (etype != ETYPE.ARITHMETIC) {
-					throw ETypeMismatch(tokenizer.getLineNumber());
-				}
 
-				String tvicode;
-				switch (operator.getOpType()) {
-					case ADD:
-						tvicode = "add";
-						break;
-					case SUBTRACT:
-						tvicode = "sub";
-						break;
-					case MULTIPLY:
-						tvicode = "mul";
-						break;
-					case DIVIDE:
-						tvicode = "div";
-						break;
-					default:
-						tvicode = "ERROR";
-						break;
-				}
-				int typeCheckResult = typeCheck(id1,id2);
+
+				if (etype == RELATIONAL) {
+					LinkedList EFalse2 = (LinkedList) semanticStack.pop();
+					LinkedList ETrue2 = (LinkedList) semanticStack.pop();
+					operator = (Token) semanticStack.pop();
+					if (operator.getOpType() == AND) {
+						EFalse1 = (LinkedList) semanticStack.pop();
+						LinkedList ETrue1 = (LinkedList) semanticStack.pop();
+						ETrue = ETrue2;
+						EFalse = merge(EFalse1, EFalse2);
+						semanticStack.push(ETrue);
+						semanticStack.push(EFalse);
+						semanticStack.push(RELATIONAL);
+
+					}
+					else {
+						throw ETypeMismatch(tokenizer.getLineNumber());
+					}
+				} else {
+					id1 = (SymbolTableEntry) semanticStack.pop();
+					operator = (Token) semanticStack.pop();
+					id2 = (SymbolTableEntry) semanticStack.pop();
+					if (etype != ARITHMETIC) {
+						throw ETypeMismatch(tokenizer.getLineNumber());
+					}
+
+					String tvicode;
+					switch (operator.getOpType()) {
+						case ADD:
+							tvicode = "add";
+							break;
+						case SUBTRACT:
+							tvicode = "sub";
+							break;
+						case MULTIPLY:
+							tvicode = "mul";
+							break;
+						case DIVIDE:
+							tvicode = "div";
+							break;
+						default:
+							tvicode = "ERROR";
+							break;
+					}
+					int typeCheckResult = typeCheck(id1, id2);
 //				if(operator.getValue() == "MOD" && typeCheckResult != 0) {
 //					throw BadMODoperands(tokenizer.getLineNumber());
 //				}
-				switch (typeCheckResult) {
-					case 0:
+					switch (typeCheckResult) {
+						case 0:
 //						if(operator.getOpType() == MOD) {
 //							VariableEntry temp1 = create(INTEGER);
 //							generate("move",id1,temp1);
@@ -399,71 +551,68 @@ public class SemanticActions {
 //							semanticStack.push(temp2); //is this right?!?
 //
 //						}
-						if (operator.getOpType() == DIVIDE) {
-							VariableEntry temp1 = create(TokenType.REAL);
-							generate("ltof",id1,temp1);
-							VariableEntry temp2 = create(TokenType.REAL);
-							generate("ltof",id2,temp2);
-							VariableEntry temp3 = create(TokenType.REAL);
-							generate("fdiv",temp1,temp2,temp3);
-							semanticStack.push(temp3);
-						}
-						else {
-							VariableEntry temp = create(TokenType.INTEGER);
-							generate(tvicode,id1,id2,temp);
-							semanticStack.push(temp);
-						}
-						break;
-					case 1:
-						if (operator.getOpType() == INTEGERDIVIDE) {
-							VariableEntry temp1 = create(TokenType.INTEGER);
-							generate("ftol",id1,temp1);
-							VariableEntry temp2 = create(TokenType.INTEGER);
-							generate("ftol",id2,temp2);
-							VariableEntry temp3 = create(TokenType.INTEGER);
-							generate("div",temp1,temp2,temp3);
-							semanticStack.push(temp3);
-						}
-						else {
-							VariableEntry temp = create(TokenType.REAL);
-							generate("f" + tvicode,id1,id2,temp);
-							semanticStack.push(temp);
-						}
-						break;
-					case 2:
-						if (operator.getOpType() == INTEGERDIVIDE) {
-							VariableEntry temp1 = create(TokenType.INTEGER);
-							generate("ftol",id1,temp1);
-							VariableEntry temp2 = create(TokenType.INTEGER);
-							generate("div",temp1,id2,temp2);
-							semanticStack.push(temp2);
-						}
-						else {
-							VariableEntry temp1 = create(TokenType.REAL);
-							generate("ltof",id2,temp1);
-							VariableEntry temp2 = create(TokenType.REAL);
-							generate("f" + tvicode,id1,temp1,temp2);
-							semanticStack.push(temp2);
-						}
-						break;
-					case 3:
-						if (operator.getOpType() == INTEGERDIVIDE) {
-							VariableEntry temp1 = create(TokenType.INTEGER);
-							generate("ftol",id2,temp1);
-							VariableEntry temp2 = create(TokenType.INTEGER);
-							generate("div",id1,temp1,temp2);
-							semanticStack.push(temp2);
-						}
-						else {
-							VariableEntry temp1 = create(TokenType.REAL);
-							generate("ltof",id1,temp1);
-							VariableEntry temp2 = create(TokenType.REAL);
-							generate("f" + tvicode,temp1,id2,temp2);
-							semanticStack.push(temp2);
-						}
-						break;
+							if (operator.getOpType() == DIVIDE) {
+								VariableEntry temp1 = create(TokenType.REAL);
+								generate("ltof", id1, temp1);
+								VariableEntry temp2 = create(TokenType.REAL);
+								generate("ltof", id2, temp2);
+								VariableEntry temp3 = create(TokenType.REAL);
+								generate("fdiv", temp1, temp2, temp3);
+								semanticStack.push(temp3);
+							} else {
+								temp = create(TokenType.INTEGER);
+								generate(tvicode, id1, id2, temp);
+								semanticStack.push(temp);
+							}
+							break;
+						case 1:
+							if (operator.getOpType() == INTEGERDIVIDE) {
+								VariableEntry temp1 = create(TokenType.INTEGER);
+								generate("ftol", id1, temp1);
+								VariableEntry temp2 = create(TokenType.INTEGER);
+								generate("ftol", id2, temp2);
+								VariableEntry temp3 = create(TokenType.INTEGER);
+								generate("div", temp1, temp2, temp3);
+								semanticStack.push(temp3);
+							} else {
+								temp = create(TokenType.REAL);
+								generate("f" + tvicode, id1, id2, temp);
+								semanticStack.push(temp);
+							}
+							break;
+						case 2:
+							if (operator.getOpType() == INTEGERDIVIDE) {
+								VariableEntry temp1 = create(TokenType.INTEGER);
+								generate("ftol", id1, temp1);
+								VariableEntry temp2 = create(TokenType.INTEGER);
+								generate("div", temp1, id2, temp2);
+								semanticStack.push(temp2);
+							} else {
+								VariableEntry temp1 = create(TokenType.REAL);
+								generate("ltof", id2, temp1);
+								VariableEntry temp2 = create(TokenType.REAL);
+								generate("f" + tvicode, id1, temp1, temp2);
+								semanticStack.push(temp2);
+							}
+							break;
+						case 3:
+							if (operator.getOpType() == INTEGERDIVIDE) {
+								VariableEntry temp1 = create(TokenType.INTEGER);
+								generate("ftol", id2, temp1);
+								VariableEntry temp2 = create(TokenType.INTEGER);
+								generate("div", id1, temp1, temp2);
+								semanticStack.push(temp2);
+							} else {
+								VariableEntry temp1 = create(TokenType.REAL);
+								generate("ltof", id1, temp1);
+								VariableEntry temp2 = create(TokenType.REAL);
+								generate("f" + tvicode, temp1, id2, temp2);
+								semanticStack.push(temp2);
+							}
+							break;
+					}
+					semanticStack.push(ARITHMETIC);
 				}
-				semanticStack.push(ETYPE.ARITHMETIC);
 			}
 				break;
 			case 46:
@@ -498,25 +647,66 @@ public class SemanticActions {
 						}
 						break;
 				}
-				semanticStack.push(ETYPE.ARITHMETIC);
+				semanticStack.push(ARITHMETIC);
+				break;
+			case 47:
+				etype = (ETYPE) semanticStack.pop();
+				if (etype != RELATIONAL) {
+					throw ETypeMismatch(tokenizer.getLineNumber());
+				}
+				ETrue = (LinkedList<Integer>) semanticStack.pop();
+				EFalse = (LinkedList<Integer>) semanticStack.pop();
+				semanticStack.push(ETrue);
+				semanticStack.push(EFalse);
+				semanticStack.push(RELATIONAL);
 				break;
 			case 48:
 				//TODO: VERIFY pop order
 				Object offset =  semanticStack.pop();
 				if (offset != OFFSET.NULL) {
 					id = (SymbolTableEntry) semanticStack.pop();
+					//TODO: CHECK for etyp
 //					semanticStack.pop();//pop Etype which apparently we don't need?
-					VariableEntry temp = create(id.getType());
+					temp = create(id.getType());
 					generate("load", id, (SymbolTableEntry) offset,temp);
 					semanticStack.push(temp);
 				}
-				semanticStack.push(ETYPE.ARITHMETIC);
+				semanticStack.push(ARITHMETIC);
 				break;
+//			case 52:
+//				etype = (ETYPE) semanticStack.pop();
+//				id = (SymbolTableEntry) semanticStack.pop();
+//				if(!id.isFunction()) {
+//					throw IllegalProcedureCall(id.getName(),tokenizer.getLineNumber());
+//				}
+//				if(((FunctionEntry)id).getNumberOfParameters() > 0) {
+//					throw WrongNumberParms(id.getName(),tokenizer.getLineNumber());
+//				}
+//				generate("call",id,"0");
+//				SymbolTableEntry temp = create(id.getType());
+//				generate("move", (SymbolTableEntry)((FunctionEntry)id).getResult(),temp);//result is function name?
+//				semanticStack.push(temp);
+//				semanticStack.push(ETYPE.ARITHMETIC);
+//				break;
 			case 53:
-
+				etype = (ETYPE) semanticStack.pop();
+				id = (SymbolTableEntry) semanticStack.pop();
+				if(id.isFunction()) {
+					if(id != currentFunction) {
+						throw IllegalFunctionName(id.getName(),tokenizer.getLineNumber());
+					}
+					semanticStack.push(((FunctionEntry)id).getResult());//function name
+					semanticStack.push(ARITHMETIC);
+				} else {
+					semanticStack.push(id);
+					semanticStack.push(etype);
+				}
 				break;
 			case 54:
-
+				id = (SymbolTableEntry) semanticStack.peek();
+				if(!id.isProcedure()) {
+					throw IllegalProcedureCall(id.getName(),tokenizer.getLineNumber());
+				}
 				break;
 			case 55:
 				//backPatch(globalStore,globalMemory);
@@ -608,6 +798,29 @@ public class SemanticActions {
 		return result;
 	}
 
+	private LinkedList<Integer> makeList(int i) {
+		LinkedList result = new LinkedList<>();
+		result.add(i);
+		return result;
+	}
+
+	private LinkedList<Integer> merge(LinkedList a, LinkedList b) {
+		LinkedList result = new LinkedList<>();
+		result.addAll(a);
+		result.addAll(b);
+		return result;
+	}
+
+	private void backPatch(int quadIndex, String value) {
+		quads.setTargetQuad(quadIndex,value);
+	}
+
+	private void backPatch(LinkedList<Integer> quadIndices, String value) {
+		quadIndices.forEach((i)-> {
+					quads.setTargetQuad(i,value);
+				});
+	}
+
 	public void printTVI() {
 		quads.print();
 	}
@@ -657,7 +870,7 @@ public class SemanticActions {
 		String prefix = generatePrefix();
 		String[] adr = constructAddresses(new SymbolTableEntry[]{operand1, operand3},prefix);
 
-		String[] quad = {tviCode, adr[0],prefix + operand2,adr[1]};
+		String[] quad = {tviCode, adr[0],operand2,adr[1]};
 		quads.addQuad(quad);
 	}
 
@@ -666,14 +879,14 @@ public class SemanticActions {
 		String prefix = generatePrefix();
 		String[] adr = constructAddresses(new SymbolTableEntry[]{operand1, operand2},prefix);
 
-		String[] quad = {tviCode, adr[0],adr[1],prefix + operand3};
+		String[] quad = {tviCode, adr[0],adr[1],operand3};
 		quads.addQuad(quad);
 	}
 
 	private void generate (String tviCode, SymbolTableEntry operand1, String operand2) {
 		String prefix = generatePrefix();
 		String[] adr = constructAddresses(new SymbolTableEntry[]{operand1},prefix);
-		String[] quad = {tviCode, adr[0],prefix + operand2, null};
+		String[] quad = {tviCode, adr[0],operand2, null};
 		quads.addQuad(quad);
 	}
 
@@ -687,19 +900,19 @@ public class SemanticActions {
 	private void generate (String tviCode, String operand1, SymbolTableEntry operand2) {
 		String prefix = generatePrefix();
 		String[] adr = constructAddresses(new SymbolTableEntry[]{operand2},prefix);
-		String[] quad = {tviCode, prefix + operand1,adr[0], null};
+		String[] quad = {tviCode, operand1,adr[0], null};
 		quads.addQuad(quad);
 	}
 
 	private void generate (String tviCode, String operand1, String operand2) {
 		String prefix = generatePrefix();
-		String[] quad = {tviCode,  prefix + operand1, prefix + operand2, null};
+		String[] quad = {tviCode,  operand1, prefix + operand2, null};
 		quads.addQuad(quad);
 	}
 
 	private void generate (String tviCode, String operand1) {
 		String prefix = generatePrefix();
-		String[] quad = {tviCode,  prefix + operand1, null, null};
+		String[] quad = {tviCode,  operand1, null, null};
 		quads.addQuad(quad);
 	}
 
