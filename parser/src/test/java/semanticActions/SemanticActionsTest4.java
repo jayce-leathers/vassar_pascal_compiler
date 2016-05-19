@@ -21,9 +21,9 @@ import static org.junit.Assert.fail;
 /**
  *
  */
-public class SemanticActionsTest2
+public class SemanticActionsTest4
 {
-    private static final File RESOURCE = new File("src/test/resources/phase2");
+    private static final File RESOURCE = new File("src/test/resources/phase4");
 
     protected Parser parser;
 
@@ -47,29 +47,26 @@ public class SemanticActionsTest2
     @Test
     public void inspectionTest() throws LexicalError, SemanticError, SymbolTableError, SyntaxError, IOException {
 
-        init("phase2-1.pas");
-        init("phase2-3.pas");
-        init("phase2-6.pas");
+        init("phase4-1.pas");
     }
 
-    @Test
-    public void illegalTypesTest() throws IOException, LexicalError, SyntaxError {
-        System.out.println("SemanticActionsTest2.expressionTest");
-        expectException("phase2-2.pas", CompilerError.Type.ILLEGAL_TYPES);
-    }
-
-    @Test
-    public void undeclaredTest() throws IOException, LexicalError, SyntaxError {
-        System.out.println("SemanticActionsTest2.expressionTest");
-        expectException("phase2-4.pas", CompilerError.Type.UN_DECL);
-        expectException("phase2-5.pas", CompilerError.Type.UN_DECL);
-    }
-
-    @Test
-    public void arrayIndicesTest() throws IOException, LexicalError, SyntaxError {
-        System.out.println("SemanticActionsTest2.expressionTest");
-        expectException("phase2-7.pas", CompilerError.Type.INVALID_SUBSCRIPT);
-    }
+//    @Test
+//    public void invalidRelOpsTest() throws IOException, LexicalError, SyntaxError {
+////        System.out.println("SemanticActionsTest2.expressionTest");
+//        expectException("phase3-5.pas", CompilerError.Type.ILLEGAL_ETYPES);
+//    }
+//    //
+//    @Test
+//    public void invalidArithOpsTest() throws IOException, LexicalError, SyntaxError {
+//        System.out.println("SemanticActionsTest2.expressionTest");
+//        expectException("phase3-6.pas", CompilerError.Type.ILLEGAL_ETYPES);
+//    }
+//
+//    @Test
+//    public void arrayIndicesTest() throws IOException, LexicalError, SyntaxError {
+//        System.out.println("SemanticActionsTest2.expressionTest");
+//        expectException("phase2-7.pas", CompilerError.Type.INVALID_SUBSCRIPT);
+//    }
 
     private void expectException(String path, CompilerError.Type expected) throws LexicalError, IOException, SyntaxError
     {

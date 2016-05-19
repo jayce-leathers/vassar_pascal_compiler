@@ -13,6 +13,7 @@ import symbolTable.VariableEntry;
 import java.io.File;
 import java.io.IOException;
 
+import static com.sun.xml.internal.ws.dump.LoggingDumpTube.Position.After;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
